@@ -10,8 +10,7 @@ module BlacklightAlma
     # for one or more ids
     def availability
       if params[:id_list].present?
-        api = BlacklightAlma::Api.new()
-        response_data = api.get_availability(params[:id_list].split(','))
+        response_data = Alma::Bib.get_availability(params[:id_list].split(','))
       else
         response_data = {
             'error' => 'No id_list parameter'

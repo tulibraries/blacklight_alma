@@ -17,11 +17,11 @@ Gem::Specification.new do |s|
   s.files = Dir["{app,config,db,lib}/**/*", "LICENSE", "Rakefile", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
 
-  s.add_dependency "rails", "~> 4.2"
+  s.add_dependency "rails", ">= 4.2", "< 6"
   s.add_dependency "blacklight", "~> 6.0"
   # there is no way to point to a git repo in a gemspec,
   # so the app's Gemfile will need to include ezwadl as well.
-  s.add_dependency 'ezwadl', '0.0.1'
+  s.add_dependency 'alma'
 
   s.add_development_dependency "engine_cart", "1.0.1"
 end
