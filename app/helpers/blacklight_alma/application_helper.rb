@@ -16,8 +16,8 @@ module BlacklightAlma
     # @return [String] url
     def alma_app_fulfillment_url(document, service_type: nil, language: nil, view: nil)
       mms_id = document.id
-      domain = ENV['ALMA_DELIVERY_DOMAIN'] || 'alma.delivery.domain.example.com'
-      institution_code = ENV['ALMA_INSTITUTION_CODE'] || 'INSTITUTION_CODE'
+      domain = Rails.configuration.alma[:delivery_domain] || 'alma.delivery.domain.example.com'
+      institution_code = Rails.configuration.alma[:institution_code] || 'INSTITUTION_CODE'
       service_type ||= alma_service_type_for_fulfillment_url(document)
 
       query = {
