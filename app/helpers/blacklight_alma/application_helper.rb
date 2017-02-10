@@ -45,7 +45,7 @@ module BlacklightAlma
     # @param document [SolrDocument]
     # @return [String] viewit, getit
     def alma_service_type_for_fulfillment_url(document)
-      if (document['format'] || '').downcase == 'electronic'
+      if (Array.wrap(document['format']).first || '').downcase == 'electronic'
         'viewit'
       else
         'getit'
