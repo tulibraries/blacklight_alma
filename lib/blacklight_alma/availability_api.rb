@@ -4,7 +4,7 @@ module BlacklightAlma
   # These are main entry points for interacting with the API
   # at a fairly high level. This code is decoupled from Rails/Blacklight
   # enough that it should be usable from standalone scripts and such.
-  class Api
+  class AvailabilityApi
 
     # see https://developers.exlibrisgroup.com/alma/apis/bibs/GET/gwPcGly021om4RTvtjbPleCklCGxeYAf3JPdiJpJhUA=/af2fb69d-64f4-42bc-bb05-d8a0ae56936e
     @inventory_type_to_subfield_codes_to_fieldnames = {
@@ -21,6 +21,8 @@ module BlacklightAlma
             'k' => 'call_number_type',
             'p' => 'priority',
             'q' => 'library',
+            't' => 'holding_info',
+            '8' => 'holding_id',
         },
         'AVD' => {
             'INVENTORY_TYPE' => 'digital',
@@ -32,12 +34,15 @@ module BlacklightAlma
         },
         'AVE' => {
             'INVENTORY_TYPE' => 'electronic',
+            'c' => 'collection_id',
+            'e' => 'activation_status',
             'l' => 'library_code',
             'm' => 'collection',
             'n' => 'public_note',
             's' => 'coverage_statement',
             't' => 'interface_name',
             'u' => 'link_to_service_page',
+            '8' => 'portfolio_pid',
         }
     }
 
@@ -50,7 +55,7 @@ module BlacklightAlma
       # make sure bibs is always an Array
       bibs = [ api_response['bibs']['bib'] ].flatten(1)
 
-      inventory_types = Api.inventory_type_to_subfield_codes_to_fieldnames.keys
+      inventory_types = AvailabilityApi.inventory_type_to_subfield_codes_to_fieldnames.keys
 
       bibs.map do |bib|
         record = Hash.new
@@ -60,17 +65,21 @@ module BlacklightAlma
 
         record['holdings'] = inventory_fields.map do |inventory_field|
           inventory_type = inventory_field['tag']
-          subfield_codes_to_fieldnames = Api.inventory_type_to_subfield_codes_to_fieldnames[inventory_type]
+          subfield_codes_to_fieldnames = AvailabilityApi.inventory_type_to_subfield_codes_to_fieldnames[inventory_type]
 
           # make sure subfields is always an Array (which isn't the case if there's only one subfield element)
           subfields = [ inventory_field.fetch('subfield', []) ].flatten(1)
 
           holding = subfields.reduce(Hash.new) do |acc, subfield|
             fieldname = subfield_codes_to_fieldnames[subfield['code']]
-            acc[fieldname] = subfield['__content__']
+            fieldvalue = subfield['__content__']
+            if fieldname
+              acc[fieldname] = fieldvalue
+            end
             acc
           end
           holding['inventory_type'] = subfield_codes_to_fieldnames['INVENTORY_TYPE']
+          holding = transform_holding(holding)
           holding
         end
         record
@@ -80,6 +89,15 @@ module BlacklightAlma
       end
     end
 
+    # this hook allows for transformation of the holding record after
+    # it's been populated using the Alma API response data
+    # and the codes have been mapped to human readable names.
+    # @param holding [Hash]
+    # @return [Hash] the modified or new holding
+    def transform_holding(holding)
+      holding
+    end
+
     # @param id_list [Array] array of id strings
     def get_availability(id_list)
       api_params = {
@@ -87,7 +105,7 @@ module BlacklightAlma
           'expand' => 'p_avail,e_avail,d_avail'
       }
 
-      api_response = BlacklightAlma::BasicApi.instance.get_availability(api_params)
+      api_response = BlacklightAlma::BibsApi.instance.get_availability(api_params)
 
       if api_response
         web_service_result = api_response['web_service_result']
@@ -115,7 +133,9 @@ module BlacklightAlma
           # }
           Blacklight.logger.error("ALMA JSON response contains error code=#{api_response}")
           response_data = {
-              'error' => "ALMA error: #{web_service_result['errorList']}"
+             # not clear why it's called 'errorList', could value be an array sometimes? not sure.
+             # for this reason, we pass it wholesale.
+              'error' => web_service_result['errorList'].present? ? web_service_result['errorList'] : 'Unknown error from ALMA API'
           }
         end
       else
