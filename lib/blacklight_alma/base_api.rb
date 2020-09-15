@@ -30,12 +30,12 @@ module BlacklightAlma
     # @return [HTTParty::Response] response object
     def request(resource, request_type, params)
       api_params = process_params(params)
-      Blacklight.logger.debug("ALMA API request: wadl=#{self.class.wadl} resource=#{resource.path} params=#{api_params}")
+      Blacklight.logger.info("ALMA API request: wadl=#{self.class.wadl} resource=#{resource.path} params=#{api_params}")
       response = nil
       time = Benchmark.measure do
         response = resource.send(request_type.to_sym, { query: api_params })
       end
-      Blacklight.logger.debug("ALMA API request took (#{(time.real * 1000).to_i}ms)")
+      Blacklight.logger.info("ALMA API request took (#{(time.real * 1000).to_i}ms)")
       response
     end
 
