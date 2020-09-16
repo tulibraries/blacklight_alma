@@ -1,8 +1,8 @@
 
-require 'singleton'
-require 'benchmark'
+require "singleton"
+require "benchmark"
 
-require 'ezwadl'
+require "ezwadl"
 
 module BlacklightAlma
 
@@ -16,11 +16,11 @@ module BlacklightAlma
     # Subclasses should implement this class-level method.
     # @return [String] filename of the wadl to use
     def self.wadl
-      raise 'This should never get called'
+      raise "This should never get called"
     end
 
     def initialize
-      @ezwadl_api = EzWadl::Parser.parse(BlacklightAlma::Engine.root.join('wadl', self.class.wadl))
+      @ezwadl_api = EzWadl::Parser.parse(BlacklightAlma::Engine.root.join("wadl", self.class.wadl))
     end
 
     # Subclasses should implement this class-level method.
@@ -38,7 +38,7 @@ module BlacklightAlma
       log = {
         type: "wadl=#{self.class.wadl}",
         resource: resource.path,
-        params: api_params,
+        params: api_params.except("apikey"),
         duration: "#{(time.real * 1000).to_i}ms)"
       }
       Blacklight.logger.info(log)
@@ -47,8 +47,8 @@ module BlacklightAlma
 
     def process_params(p)
       params = p.dup
-      if !params.member?('apikey')
-        params['apikey'] = ENV['ALMA_API_KEY']
+      if !params.member?("apikey")
+        params["apikey"] = ENV["ALMA_API_KEY"]
       end
       params
     end
